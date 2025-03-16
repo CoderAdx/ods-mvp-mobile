@@ -100,7 +100,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
       return;
     }
 
-    final appName = match.group(1)!;
     final targetTime = int.parse(match.group(2)!);
 
     try {

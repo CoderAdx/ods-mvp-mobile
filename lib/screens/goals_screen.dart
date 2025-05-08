@@ -40,6 +40,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
       if (response.statusCode == 200) {
         setState(() {
           goalsData = jsonDecode(response.body);
+          print('Lista de metas atualizada: $goalsData'); // Log para depuração
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -67,16 +68,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
           usageData = jsonDecode(response.body);
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: ${jsonDecode(response.body)['error']}'),
-          ),
-        );
+        // Se não houver dados de uso, define usageData como uma lista vazia
+        final errorMessage = jsonDecode(response.body)['error'];
+        if (errorMessage == 'Nenhum dado de uso encontrado para este usuário') {
+          setState(() {
+            usageData = [];
+          });
+        } else {
+          // Exibe erro apenas para outros tipos de falhas
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao buscar dados de uso: $errorMessage'),
+            ),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      ).showSnackBar(SnackBar(content: Text('Erro de conexão: $e')));
     }
   }
 
@@ -136,6 +146,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   Future<void> _deleteGoal(int goalId) async {
     try {
+      // Remove a meta localmente para atualização imediata da UI
+      setState(() {
+        goalsData.removeWhere((goal) => goal['id'] == goalId);
+      });
+
       final response = await http.delete(
         Uri.parse('http://localhost:3000/api/goals/$goalId'),
         headers: {'Content-Type': 'application/json'},
@@ -145,7 +160,35 @@ class _GoalsScreenState extends State<GoalsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Meta deletada com sucesso')),
         );
-        _fetchGoals(); // Atualiza a lista após exclusão
+        await _fetchGoals(); // Atualiza a lista com os dados do backend
+      } else {
+        // Se houver erro, recarrega a lista para reverter a remoção local
+        await _fetchGoals();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${jsonDecode(response.body)['error']}'),
+          ),
+        );
+      }
+    } catch (e) {
+      // Se houver erro de conexão, recarrega a lista para reverter a remoção local
+      await _fetchGoals();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+    }
+  }
+
+  Future<void> _updateGoalStatus(int goalId, String newStatus) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('http://localhost:3000/api/goals/$goalId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'status': newStatus}),
+      );
+
+      if (response.statusCode == 200) {
+        _fetchGoals(); // Atualiza a lista após a mudança de status
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -188,6 +231,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.purple[50],
       appBar: AppBar(title: const Text('Metas')),
       body: Column(
         children: [
@@ -223,8 +267,25 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     ).firstMatch(goal['goal_description'] ?? '')?.group(1) ??
                     'Desconhecido';
                 final progress = _calculateProgress(appName);
+                final isCompleted = goal['status'] == 'Concluída';
+
                 return ListTile(
-                  title: Text(goal['goal_description'] ?? 'Sem descrição'),
+                  leading: Checkbox(
+                    value: isCompleted,
+                    onChanged: (bool? value) {
+                      final newStatus =
+                          value == true ? 'Concluída' : 'Em andamento';
+                      _updateGoalStatus(goal['id'], newStatus);
+                    },
+                  ),
+                  title: Text(
+                    goal['goal_description'] ?? 'Sem descrição',
+                    style: TextStyle(
+                      decoration:
+                          isCompleted ? TextDecoration.lineThrough : null,
+                      color: isCompleted ? Colors.grey : null,
+                    ),
+                  ),
                   subtitle: Text(
                     'Progresso: ${progress}min hoje | Status: ${goal['status'] ?? 'N/A'}',
                   ),

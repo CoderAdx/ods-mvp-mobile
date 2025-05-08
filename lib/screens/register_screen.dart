@@ -9,52 +9,111 @@ class RegisterScreen extends StatefulWidget {
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
+  late AnimationController _animationController;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _nameController.addListener(() {
+      setState(() {});
+    });
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+
+    _opacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(_animationController);
+  }
 
   Future<void> _register() async {
-    final name = _nameController.text;
-    final email = _emailController.text;
-    final password = _passwordController.text;
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, preencha todos os campos')),
+        const SnackBar(
+          content: Text('Por favor, preencha todos os campos'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('As senhas não coincidem'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      setState(() => _isLoading = false);
       return;
     }
 
     try {
       final response = await http.post(
-        Uri.parse(
-          'http://localhost:3000/api/users/register',
-        ), // Confirme que tá /register
+        Uri.parse('http://localhost:3000/api/users/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': name, 'email': email, 'password': password}),
       );
 
-      print('Status Code: ${response.statusCode}'); // Debug
-      print('Response Body: ${response.body}'); // Debug
+      if (!mounted) return;
 
       if (response.statusCode == 201) {
-        // Sucesso
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuário criado com sucesso!')),
+          const SnackBar(
+            content: Text('Usuário criado com sucesso! Faça o login.'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.pushNamed(context, '/dashboard');
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       } else {
-        // Erro
         final data = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['error'] ?? 'Erro ao criar usuário')),
+          SnackBar(
+            content: Text(data['error'] ?? 'Erro ao criar usuário'),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro de conexão: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -63,52 +122,164 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final nome = _nameController.text;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastro')),
+      backgroundColor: Colors.purple[50],
+      appBar: AppBar(
+        title: const Text('Criar Conta'),
+        backgroundColor: const Color(0xFFA7C7E7),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        padding: const EdgeInsets.all(24.0),
+        child: ListView(
           children: [
+            Image.asset('assets/images/logoo.jpeg'),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.only(top: 20.0, bottom: 10.0),
+              child: RichText(
+                textAlign: TextAlign.start,
+                softWrap: true,
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A4A4A),
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: 'Boas-vindas, ',
+                      style: TextStyle(fontSize: 30),
+                    ),
+                    nome.isEmpty
+                        ? WidgetSpan(
+                          child: FadeTransition(
+                            opacity: _opacityAnimation,
+                            child: const Text(
+                              '...',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        )
+                        : TextSpan(
+                          text: nome,
+                          style: const TextStyle(color: Color(0xFFFF768D)),
+                        ),
+                    const TextSpan(text: '!', style: TextStyle(fontSize: 30)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'Nome',
-                border: OutlineInputBorder(),
+                labelText: 'Nome completo',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+                prefixIcon: Icon(Icons.person),
               ),
+              keyboardType: TextInputType.name,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
                 labelText: 'Email',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+                prefixIcon: Icon(Icons.email),
               ),
+              keyboardType: TextInputType.emailAddress,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             TextField(
               controller: _passwordController,
+              obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Senha',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+                prefixIcon: Icon(Icons.lock),
               ),
+              keyboardType: TextInputType.visiblePassword,
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _confirmPasswordController,
               obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Confirmar Senha',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+              keyboardType: TextInputType.visiblePassword,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: _register,
-              child: const Text('Cadastrar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Já tem conta? Faça login'),
+              onPressed: _isLoading ? null : _register,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFA7C7E7),
+              ),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                      : const Text('Criar Conta'),
             ),
           ],
         ),

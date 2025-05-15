@@ -15,6 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _securityWordController = TextEditingController();
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _opacityAnimation;
@@ -46,11 +47,13 @@ class _RegisterScreenState extends State<RegisterScreen>
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
+    final securityWord = _securityWordController.text.trim();
 
     if (name.isEmpty ||
         email.isEmpty ||
         password.isEmpty ||
-        confirmPassword.isEmpty) {
+        confirmPassword.isEmpty ||
+        securityWord.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor, preencha todos os campos'),
@@ -76,7 +79,12 @@ class _RegisterScreenState extends State<RegisterScreen>
       final response = await http.post(
         Uri.parse('http://localhost:3000/api/users/register'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'security_word': securityWord,
+        }),
       );
 
       if (!mounted) return;
@@ -123,6 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _securityWordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -262,6 +271,26 @@ class _RegisterScreenState extends State<RegisterScreen>
                 prefixIcon: Icon(Icons.lock_outline),
               ),
               keyboardType: TextInputType.visiblePassword,
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _securityWordController,
+              decoration: const InputDecoration(
+                labelText: 'Palavra de Segurança',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+                prefixIcon: Icon(Icons.security),
+              ),
+              keyboardType: TextInputType.text,
             ),
             const SizedBox(height: 30),
             ElevatedButton(

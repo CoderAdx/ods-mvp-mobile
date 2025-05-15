@@ -7,6 +7,7 @@ import 'screens/goals_screen.dart';
 import 'screens/interactions_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/interaction_history_screen.dart';
+import 'screens/reset_password_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
         '/goals': (context) => const GoalsScreen(),
         '/interactions': (context) => const InteractionsScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/reset-password': (context) => const ResetPasswordScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

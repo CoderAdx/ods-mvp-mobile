@@ -78,7 +78,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/goals/$_userId'),
+        Uri.parse('http://192.168.1.19:3000/api/goals/$_userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -139,7 +139,7 @@ Responda em português, em um tom amigável e acolhedor. Cada parágrafo deve te
         });
         // Salva a resposta no histórico
         await http.post(
-          Uri.parse('http://localhost:3000/api/interaction-history'),
+          Uri.parse('http://192.168.1.19:3000/api/interaction-history'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'userId': _userId, 'responseText': feedback}),
         );

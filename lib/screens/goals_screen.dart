@@ -59,7 +59,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _fetchUsage() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/usage/$userId'),
+        Uri.parse('http://192.168.1.19:3000/api/usage/$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -114,7 +114,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/goals'),
+        Uri.parse('http://192.168.1.19:3000/api/goals'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': userId,
@@ -152,7 +152,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
       });
 
       final response = await http.delete(
-        Uri.parse('http://localhost:3000/api/goals/$goalId'),
+        Uri.parse('http://192.168.1.19:3000/api/goals/$goalId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -182,7 +182,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _updateGoalStatus(int goalId, String newStatus) async {
     try {
       final response = await http.patch(
-        Uri.parse('http://localhost:3000/api/goals/$goalId'),
+        Uri.parse('http://192.168.1.19:3000/api/goals/$goalId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'status': newStatus}),
       );

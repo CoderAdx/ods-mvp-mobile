@@ -18,6 +18,8 @@ dependencies:
   http: ^1.2.1
   shared_preferences: ^2.2.0
   google_fonts: ^6.1.0
+  video_player: ^2.9.5
+  lottie: ^3.3.1
   
 
   cupertino_icons: ^1.0.8
@@ -39,7 +41,9 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/logoo.jpeg
+    - assets/lottie/robohello.json
     - .env
+
 
 
   uses-material-design: true

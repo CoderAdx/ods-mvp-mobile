@@ -33,7 +33,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _fetchGoals() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/goals/$userId'),
+        Uri.parse('http://192.168.1.19:3000/api/goals/$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 

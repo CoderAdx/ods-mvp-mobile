@@ -32,7 +32,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/users/verify-security-word'),
+        Uri.parse('http://192.168.1.19:3000/api/users/verify-security-word'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'security_word': securityWord}),
       );

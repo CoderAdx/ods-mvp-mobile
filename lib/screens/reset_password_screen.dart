@@ -71,7 +71,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/users/reset-password'),
+        Uri.parse('http://192.168.1.19:3000/api/users/reset-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'userId': _userId, 'newPassword': newPassword}),
       );

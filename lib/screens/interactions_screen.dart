@@ -38,7 +38,7 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/goals/$_userId'),
+        Uri.parse('http://192.168.1.19:3000/api/goals/$_userId'),
         headers: {'Content-Type': 'application/json'},
       );
 

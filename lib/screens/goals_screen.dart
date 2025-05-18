@@ -206,11 +206,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
               itemCount: goalsData.length,
               itemBuilder: (context, index) {
                 final goal = goalsData[index];
-                final appName =
-                    RegExp(
-                      r'Reduzir (\w+) a',
-                    ).firstMatch(goal['goal_description'] ?? '')?.group(1) ??
-                    'Desconhecido';
                 final isCompleted = goal['status'] == 'Concluída';
 
                 return ListTile(

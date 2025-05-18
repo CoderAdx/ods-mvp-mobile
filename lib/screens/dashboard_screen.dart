@@ -8,6 +8,7 @@ class DashboardScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId'); // Remove o userId do SharedPreferences
+    await prefs.remove('token'); // Remove o token do SharedPreferences
     Navigator.pushReplacementNamed(
       context,
       '/login',
@@ -20,7 +21,6 @@ class DashboardScreen extends StatelessWidget {
       backgroundColor: Colors.purple[50], // Mesmo fundo das outras telas
       appBar: AppBar(
         title: const Text('Dashboard'),
-        // Removida a cor personalizada para usar o padrão do tema (como em UsageHistoryScreen)
         actions: [
           // Botão de logout
           IconButton(
@@ -54,7 +54,6 @@ class DashboardScreen extends StatelessWidget {
                   Navigator.pushNamed(context, '/usage_history');
                 },
                 style: ElevatedButton.styleFrom(
-                  // Removida a cor personalizada para usar o padrão do tema
                   minimumSize: const Size.fromHeight(
                     50,
                   ), // Altura fixa para consistência

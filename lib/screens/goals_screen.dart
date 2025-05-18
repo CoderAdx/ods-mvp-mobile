@@ -13,16 +13,19 @@ class GoalsScreen extends StatefulWidget {
 class _GoalsScreenState extends State<GoalsScreen> {
   List<dynamic> goalsData = [];
   String? userId;
+  String? token;
   final TextEditingController _goalDescriptionController =
       TextEditingController();
 
-  Future<void> _fetchUserId() async {
+  Future<void> _fetchUserIdAndToken() async {
     final prefs = await SharedPreferences.getInstance();
     userId = prefs.getString('userId');
-    if (userId == null) {
+    token = prefs.getString('token');
+    if (userId == null || token == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Usuário não logado')));
+      Navigator.pushReplacementNamed(context, '/login');
       return;
     }
     _fetchGoals();
@@ -31,13 +34,19 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _fetchGoals() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/goals/$userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
       );
 
       if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
         setState(() {
-          goalsData = jsonDecode(response.body);
+          goalsData =
+              responseData['data'] ??
+              []; // Ajustado para a estrutura da resposta
           print('Lista de metas atualizada: $goalsData'); // Log para depuração
         });
       } else {
@@ -78,10 +87,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/goals'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
         body: jsonEncode({
-          'userId': userId,
           'goalDescription': description,
           'targetTime': targetTime,
           'status': 'Em andamento',
@@ -116,8 +127,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
       });
 
       final response = await http.delete(
-        Uri.parse('http://localhost:3000/api/goals/$goalId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals/$goalId'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
       );
 
       if (response.statusCode == 200) {
@@ -146,8 +160,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _updateGoalStatus(int goalId, String newStatus) async {
     try {
       final response = await http.patch(
-        Uri.parse('http://localhost:3000/api/goals/$goalId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals/$goalId'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
         body: jsonEncode({'status': newStatus}),
       );
 
@@ -170,7 +187,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchUserId();
+    _fetchUserIdAndToken();
   }
 
   @override

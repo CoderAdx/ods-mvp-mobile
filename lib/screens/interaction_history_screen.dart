@@ -14,14 +14,17 @@ class InteractionHistoryScreen extends StatefulWidget {
 class _InteractionHistoryScreenState extends State<InteractionHistoryScreen> {
   List<dynamic> interactionData = [];
   String? userId;
+  String? token;
 
-  Future<void> _fetchUserId() async {
+  Future<void> _fetchUserIdAndToken() async {
     final prefs = await SharedPreferences.getInstance();
     userId = prefs.getString('userId');
-    if (userId == null) {
+    token = prefs.getString('token');
+    if (userId == null || token == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Usuário não logado')));
+      Navigator.pushReplacementNamed(context, '/login');
       return;
     }
     _fetchInteractions();
@@ -30,8 +33,13 @@ class _InteractionHistoryScreenState extends State<InteractionHistoryScreen> {
   Future<void> _fetchInteractions() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.19:3000/api/interaction-history/$userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse(
+          'http://localhost:3000/api/interaction-history',
+        ), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
       );
 
       if (response.statusCode == 200) {
@@ -55,7 +63,7 @@ class _InteractionHistoryScreenState extends State<InteractionHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchUserId();
+    _fetchUserIdAndToken();
   }
 
   @override

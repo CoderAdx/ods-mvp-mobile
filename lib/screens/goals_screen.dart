@@ -12,34 +12,41 @@ class GoalsScreen extends StatefulWidget {
 
 class _GoalsScreenState extends State<GoalsScreen> {
   List<dynamic> goalsData = [];
-  List<dynamic> usageData = [];
   String? userId;
+  String? token;
   final TextEditingController _goalDescriptionController =
       TextEditingController();
 
-  Future<void> _fetchUserId() async {
+  Future<void> _fetchUserIdAndToken() async {
     final prefs = await SharedPreferences.getInstance();
     userId = prefs.getString('userId');
-    if (userId == null) {
+    token = prefs.getString('token');
+    if (userId == null || token == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Usuário não logado')));
+      Navigator.pushReplacementNamed(context, '/login');
       return;
     }
     _fetchGoals();
-    _fetchUsage();
   }
 
   Future<void> _fetchGoals() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.19:3000/api/goals/$userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
       );
 
       if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
         setState(() {
-          goalsData = jsonDecode(response.body);
+          goalsData =
+              responseData['data'] ??
+              []; // Ajustado para a estrutura da resposta
           print('Lista de metas atualizada: $goalsData'); // Log para depuração
         });
       } else {
@@ -53,40 +60,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erro: $e')));
-    }
-  }
-
-  Future<void> _fetchUsage() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://192.168.1.19:3000/api/usage/$userId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          usageData = jsonDecode(response.body);
-        });
-      } else {
-        // Se não houver dados de uso, define usageData como uma lista vazia
-        final errorMessage = jsonDecode(response.body)['error'];
-        if (errorMessage == 'Nenhum dado de uso encontrado para este usuário') {
-          setState(() {
-            usageData = [];
-          });
-        } else {
-          // Exibe erro apenas para outros tipos de falhas
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro ao buscar dados de uso: $errorMessage'),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erro de conexão: $e')));
     }
   }
 
@@ -114,10 +87,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.19:3000/api/goals'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
+
         body: jsonEncode({
-          'userId': userId,
           'goalDescription': description,
           'targetTime': targetTime,
           'status': 'Em andamento',
@@ -152,8 +128,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
       });
 
       final response = await http.delete(
-        Uri.parse('http://192.168.1.19:3000/api/goals/$goalId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals/$goalId'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
       );
 
       if (response.statusCode == 200) {
@@ -182,8 +161,12 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Future<void> _updateGoalStatus(int goalId, String newStatus) async {
     try {
       final response = await http.patch(
-        Uri.parse('http://192.168.1.19:3000/api/goals/$goalId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals/$goalId'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Adiciona o token JWT
+        },
+
         body: jsonEncode({'status': newStatus}),
       );
 
@@ -203,29 +186,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
     }
   }
 
-  int _calculateProgress(String appName) {
-    int totalMinutes = 0;
-    final today = DateTime.now();
-    for (var usage in usageData) {
-      if (usage['app_name'] != appName) continue;
-      final usageDate = DateTime.parse(usage['date']);
-      if (usageDate.day == today.day &&
-          usageDate.month == today.month &&
-          usageDate.year == today.year) {
-        final timeSpent = usage['time_spent'] as String;
-        final parts = timeSpent.split(':');
-        final hours = int.parse(parts[0]);
-        final minutes = int.parse(parts[1]);
-        totalMinutes += hours * 60 + minutes;
-      }
-    }
-    return totalMinutes;
-  }
-
   @override
   void initState() {
     super.initState();
-    _fetchUserId();
+    _fetchUserIdAndToken();
   }
 
   @override
@@ -261,12 +225,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
               itemCount: goalsData.length,
               itemBuilder: (context, index) {
                 final goal = goalsData[index];
-                final appName =
-                    RegExp(
-                      r'Reduzir (\w+) a',
-                    ).firstMatch(goal['goal_description'] ?? '')?.group(1) ??
-                    'Desconhecido';
-                final progress = _calculateProgress(appName);
                 final isCompleted = goal['status'] == 'Concluída';
 
                 return ListTile(
@@ -286,9 +244,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       color: isCompleted ? Colors.grey : null,
                     ),
                   ),
-                  subtitle: Text(
-                    'Progresso: ${progress}min hoje | Status: ${goal['status'] ?? 'N/A'}',
-                  ),
+                  subtitle: Text('Status: ${goal['status'] ?? 'N/A'}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: () {

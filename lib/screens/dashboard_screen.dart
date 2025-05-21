@@ -12,9 +12,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('userId');
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/login');
+
+    await prefs.remove('userId'); // Remove o userId do SharedPreferences
+    await prefs.remove('token'); // Remove o token do SharedPreferences
+    Navigator.pushReplacementNamed(
+      context,
+      '/login',
+    ); // Redireciona para a tela de login
   }
 
   @override
@@ -31,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+
       body: Center(
         child: Card(
           elevation: 8,

@@ -17,33 +17,40 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
   String _feedback = '';
   bool _isLoading = false;
   String? _userId;
+  String? _token;
   bool _noGoals = false; // Para controlar se há metas ou não
 
   @override
   void initState() {
     super.initState();
-    _fetchUserIdAndGoals();
+    _fetchUserIdAndToken();
   }
 
-  // Carrega o userId e busca as metas do back-end
-  Future<void> _fetchUserIdAndGoals() async {
+  // Carrega o userId, token e busca as metas do back-end
+  Future<void> _fetchUserIdAndToken() async {
     final prefs = await SharedPreferences.getInstance();
     _userId = prefs.getString('userId');
-    if (_userId == null) {
+    _token = prefs.getString('token');
+    if (_userId == null || _token == null) {
       setState(() {
         _feedback = 'Usuário não logado. Faça login novamente.';
       });
+      Navigator.pushReplacementNamed(context, '/login');
       return;
     }
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.19:3000/api/goals/$_userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token', // Adiciona o token JWT
+        },
       );
 
       if (response.statusCode == 200) {
-        final goalsData = jsonDecode(response.body) as List;
+        final responseData = jsonDecode(response.body);
+        final goalsData = responseData['data'] ?? [];
         setState(() {
           _noGoals = goalsData.isEmpty; // Verifica se há metas
         });
@@ -78,13 +85,17 @@ class _InteractionsScreenState extends State<InteractionsScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.1.19:3000/api/goals/$_userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://localhost:3000/api/goals'), // URL corrigida
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token', // Adiciona o token JWT
+        },
       );
 
       String goalsText;
       if (response.statusCode == 200) {
-        final goalsData = jsonDecode(response.body) as List;
+        final responseData = jsonDecode(response.body);
+        final goalsData = responseData['data'] ?? [];
         goalsText =
             goalsData.isNotEmpty
                 ? goalsData
@@ -139,9 +150,14 @@ Responda em português, em um tom amigável e acolhedor. Cada parágrafo deve te
         });
         // Salva a resposta no histórico
         await http.post(
-          Uri.parse('http://192.168.1.19:3000/api/interaction-history'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'userId': _userId, 'responseText': feedback}),
+          Uri.parse(
+            'http://localhost:3000/api/interaction-history',
+          ), // URL corrigida
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_token', // Adiciona o token JWT
+          },
+          body: jsonEncode({'responseText': feedback}),
         );
       } else {
         setState(() {

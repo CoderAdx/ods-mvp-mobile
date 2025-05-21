@@ -45,8 +45,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final userId = data['userId'].toString();
+        final token = data['token']; // Armazena o token JWT
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('userId', userId);
+        await prefs.setString('token', token); // Salva o token
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
